@@ -108,7 +108,6 @@ char *getsel(void);
 
 void highlighturls(void);
 void unhighlighturls(void);
-int readurl(int, int, int *, char **);
 void followurl(int, int);
 
 size_t utf8encode(Rune, char *);

@@ -6,7 +6,6 @@ include config.mk
 
 SRC = st.c x.c
 OBJ = $(SRC:.c=.o)
-CFLAGS = -g
 
 all: st
 

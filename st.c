@@ -687,49 +687,30 @@ unhighlighturls(void)
 	return;
 }
 
-int
-readurl(int x, int y, int *url_start, char **line)
-{
-	char* freeafteruse;
-	if (!line) {
-		freeafteruse = calloc(sizeof(char), term.col+1); /* assume ascii */;
-		line = &freeafteruse;
-	}
-	int tmp_url_start;
-	if (!url_start) {
-		url_start = &tmp_url_start;
-	}
-	char *match;
-	for (int i = 0; i < term.col; i++) {
-		if (term.line[y][i].u < 127) {
-			(*line)[i] = term.line[y][i].u;
-		}
-		(*line)[term.col] = '\0';
-	}
-	*url_start = -1;
-	while ((match = strstrany(*line + *url_start + 1, urlprefixes))) {
-		*url_start = match - *line;
-		int url_end = *url_start;
-		for (int c = *url_start; c < term.col && strchr(urlchars, (*line)[c]); c++) {
-			url_end++;
-		}
-		if (*url_start <= x && x < url_end) {
-			(*line)[url_end] = '\0';
-			break;
-		}
-	}
-	if (freeafteruse) {
-		free(freeafteruse);
-	}
-	return (*url_start != -1);
-}
-
 void
 followurl(int x, int y)
 {
 	char *linestr = calloc(sizeof(char), term.col+1); /* assume ascii */
+	char *match;
+	for (int i = 0; i < term.col; i++) {
+		if (term.line[y][i].u < 127) {
+			linestr[i] = term.line[y][i].u;
+		}
+		linestr[term.col] = '\0';
+	}
 	int url_start = -1;
-	if (!readurl(x, y, &url_start, &linestr)) {
+	while ((match = strstrany(linestr + url_start + 1, urlprefixes))) {
+		url_start = match - linestr;
+		int url_end = url_start;
+		for (int c = url_start; c < term.col && strchr(urlchars, linestr[c]); c++) {
+			url_end++;
+		}
+		if (url_start <= x && x < url_end) {
+			linestr[url_end] = '\0';
+			break;
+		}
+	}
+	if (url_start == -1) {
 		free(linestr);
 		return;
 	}

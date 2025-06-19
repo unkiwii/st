@@ -183,7 +183,6 @@ static int mouseaction(XEvent *, uint);
 static void brelease(XEvent *);
 static void bpress(XEvent *);
 static void bmotion(XEvent *);
-static void updatemousecursor(XEvent *, int);
 static void propnotify(XEvent *);
 static void selnotify(XEvent *);
 static void selclear_(XEvent *);
@@ -229,9 +228,6 @@ static DC dc;
 static XWindow xw;
 static XSelection xsel;
 static TermWindow win;
-static Cursor urlcursor;
-static Cursor normalcursor;
-static int highlighturl = 0;
 
 /* Font Ring Cache */
 enum {
@@ -782,44 +778,12 @@ brelease(XEvent *e)
 void
 bmotion(XEvent *e)
 {
-	/* update mouse cursor only if highlighting url */
-	if (highlighturl)
-		updatemousecursor(e, highlighturl);
-
 	if (IS_SET(MODE_MOUSE) && !(e->xbutton.state & forcemousemod)) {
 		mousereport(e);
 		return;
 	}
 
 	mousesel(e, 0);
-}
-
-void
-updatemousecursor(XEvent *e, int highlighturl)
-{
-	int x, y;
-
-	if (e) {
-		x = evcol(e);
-		y = evrow(e);
-	} else {
-		Window root, win;
-		unsigned int unusedu;
-		int unused;
-		int winx, winy;
-		int found = XQueryPointer(xw.dpy, xw.win, &root, &win,
-														&unused, &unused, &winx, &winy, &unusedu);
-		if (found) {
-			x = colx(winx);
-			y = rowy(winy);
-		}
-	}
-
-	if (highlighturl && readurl(x, y, NULL, NULL)) {
-		XDefineCursor(xw.dpy, xw.win, urlcursor);
-	} else {
-		XDefineCursor(xw.dpy, xw.win, normalcursor);
-	}
 }
 
 void
@@ -1298,9 +1262,8 @@ xinit(int cols, int rows)
 	}
 
 	/* white cursor, black outline */
-	normalcursor = XCreateFontCursor(xw.dpy, mouseshape);
-	urlcursor = XCreateFontCursor(xw.dpy, urlmouseshape);
-	XDefineCursor(xw.dpy, xw.win, normalcursor);
+	cursor = XCreateFontCursor(xw.dpy, mouseshape);
+	XDefineCursor(xw.dpy, xw.win, cursor);
 
 	if (XParseColor(xw.dpy, xw.cmap, (*colorname)[mousefg], &xmousefg) == 0) {
 		xmousefg.red   = 0xffff;
@@ -1314,7 +1277,7 @@ xinit(int cols, int rows)
 		xmousebg.blue  = 0x0000;
 	}
 
-	XRecolorCursor(xw.dpy, normalcursor, &xmousefg, &xmousebg);
+	XRecolorCursor(xw.dpy, cursor, &xmousefg, &xmousebg);
 
 	xw.xembed = XInternAtom(xw.dpy, "_XEMBED", False);
 	xw.wmdeletewin = XInternAtom(xw.dpy, "WM_DELETE_WINDOW", False);
@@ -1962,13 +1925,10 @@ kpress(XEvent *ev)
 	/* 0. highlight URLs when control held */
 	if (XLookupKeysym(e, 0) == XK_Control_L) {
 		if (ev->type == KeyPress) {
-			highlighturl = 1;
 			highlighturls();
 		} else {
-			highlighturl = 0;
 			unhighlighturls();
 		}
-		updatemousecursor(NULL, highlighturl);
 	}
 
 	/* KeyRelease not relevant to shortcuts */
