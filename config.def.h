@@ -498,7 +498,7 @@ static char ascii_printable[] =
  * Open urls starting with urlprefixes, contatining urlchars
  * by passing as ARG1 to urlhandler.
  */
-char* urlhandler = "firefox";
+char* urlhandler = "xdg-open";
 char urlchars[] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"abcdefghijklmnopqrstuvwxyz"
